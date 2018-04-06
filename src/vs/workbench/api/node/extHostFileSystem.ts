@@ -6,14 +6,14 @@
 
 import URI, { UriComponents } from 'vs/base/common/uri';
 import { TPromise } from 'vs/base/common/winjs.base';
-import { MainContext, IMainContext, ExtHostFileSystemShape, MainThreadFileSystemShape } from './extHost.protocol';
+import { MainContext, IMainContext, ExtHostFileSystemShape, MainThreadFileSystemShape, IFileChangeDto } from './extHost.protocol';
 import * as vscode from 'vscode';
-import { IStat } from 'vs/platform/files/common/files';
+import * as files from 'vs/platform/files/common/files';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { asWinJsPromise } from 'vs/base/common/async';
 import { IPatternInfo } from 'vs/platform/search/common/search';
 import { values } from 'vs/base/common/map';
-import { Range } from 'vs/workbench/api/node/extHostTypes';
+import { Range, FileChangeType } from 'vs/workbench/api/node/extHostTypes';
 import { ExtHostLanguageFeatures } from 'vs/workbench/api/node/extHostLanguageFeatures';
 import { IProgress } from 'vs/platform/progress/common/progress';
 
@@ -77,7 +77,7 @@ export class ExtHostFileSystem implements ExtHostFileSystemShape {
 		this._proxy.$registerFileSystemProvider(handle, scheme);
 		let reg: IDisposable;
 		if (provider.onDidChange) {
-			reg = provider.onDidChange(event => this._proxy.$onFileSystemChange(handle, <any>event));
+			reg = provider.onDidChange(event => this._proxy.$onFileSystemChange(handle, event.map(ExtHostFileSystem._fromFileEvent)));
 		}
 		return {
 			dispose: () => {
@@ -88,6 +88,30 @@ export class ExtHostFileSystem implements ExtHostFileSystemShape {
 				this._fsProvider.delete(handle);
 				this._proxy.$unregisterProvider(handle);
 			}
+		};
+	}
+
+	private static _fromFileEvent(event: vscode.FileChange): IFileChangeDto {
+		let { resource, type } = event;
+
+		let interalType: files.FileChangeType;
+		switch (type) {
+			case FileChangeType.Added:
+			case FileChangeType.Created:
+				interalType = files.FileChangeType.ADDED;
+				break;
+			case FileChangeType.Changed:
+			case FileChangeType.Updated:
+				interalType = files.FileChangeType.UPDATED;
+				break;
+			case FileChangeType.Deleted:
+				interalType = files.FileChangeType.DELETED;
+				break;
+		}
+
+		return {
+			resource,
+			type: interalType
 		};
 	}
 
@@ -103,10 +127,10 @@ export class ExtHostFileSystem implements ExtHostFileSystemShape {
 		};
 	}
 
-	$utimes(handle: number, resource: UriComponents, mtime: number, atime: number): TPromise<IStat, any> {
+	$utimes(handle: number, resource: UriComponents, mtime: number, atime: number): TPromise<files.IStat, any> {
 		return asWinJsPromise(token => this._fsProvider.get(handle).utimes(URI.revive(resource), mtime, atime));
 	}
-	$stat(handle: number, resource: UriComponents): TPromise<IStat, any> {
+	$stat(handle: number, resource: UriComponents): TPromise<files.IStat, any> {
 		return asWinJsPromise(token => this._fsProvider.get(handle).stat(URI.revive(resource)));
 	}
 	$read(handle: number, session: number, offset: number, count: number, resource: UriComponents): TPromise<number> {
@@ -127,13 +151,13 @@ export class ExtHostFileSystem implements ExtHostFileSystemShape {
 	$unlink(handle: number, resource: UriComponents): TPromise<void, any> {
 		return asWinJsPromise(token => this._fsProvider.get(handle).unlink(URI.revive(resource)));
 	}
-	$move(handle: number, resource: UriComponents, target: UriComponents): TPromise<IStat, any> {
+	$move(handle: number, resource: UriComponents, target: UriComponents): TPromise<files.IStat, any> {
 		return asWinJsPromise(token => this._fsProvider.get(handle).move(URI.revive(resource), URI.revive(target)));
 	}
-	$mkdir(handle: number, resource: UriComponents): TPromise<IStat, any> {
+	$mkdir(handle: number, resource: UriComponents): TPromise<files.IStat, any> {
 		return asWinJsPromise(token => this._fsProvider.get(handle).mkdir(URI.revive(resource)));
 	}
-	$readdir(handle: number, resource: UriComponents): TPromise<[UriComponents, IStat][], any> {
+	$readdir(handle: number, resource: UriComponents): TPromise<[UriComponents, files.IStat][], any> {
 		return asWinJsPromise(token => this._fsProvider.get(handle).readdir(URI.revive(resource)));
 	}
 	$rmdir(handle: number, resource: UriComponents): TPromise<void, any> {

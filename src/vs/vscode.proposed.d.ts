@@ -153,9 +153,18 @@ declare module 'vscode' {
 	// }
 
 	export enum FileChangeType {
-		Updated = 0,
-		Added = 1,
-		Deleted = 2
+		Changed = 1,
+		Created = 2,
+		Deleted = 3,
+
+		/**
+		 * @deprecated
+		 */
+		Updated = 1,
+		/**
+		 * @deprecated
+		 */
+		Added = 2,
 	}
 
 	export interface FileChange {
@@ -164,9 +173,9 @@ declare module 'vscode' {
 	}
 
 	export enum FileType {
-		File = 0,
-		Dir = 1,
-		Symlink = 2
+		File = 1,
+		Dir = 2,
+		Symlink = 64
 	}
 
 	export interface FileStat {

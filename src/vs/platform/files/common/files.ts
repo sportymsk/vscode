@@ -165,10 +165,11 @@ export interface IFileService {
 
 
 export enum FileType {
-	File = 0,
-	Dir = 1,
-	Symlink = 2
+	File = 1,
+	Dir = 2,
+	Symlink = 64
 }
+
 export interface IStat {
 	id: number | string;
 	mtime: number;
