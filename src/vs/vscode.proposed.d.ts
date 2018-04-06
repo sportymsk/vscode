@@ -199,7 +199,9 @@ declare module 'vscode' {
 
 		stat(resource: Uri): Thenable<FileStat>;
 
-		read(resource: Uri, offset: number, length: number, progress: Progress<Uint8Array>): Thenable<number>;
+		readdir(resource: Uri): Thenable<[Uri, FileStat][]>;
+
+		read(resource: Uri, position: number, length: number, progress: Progress<Uint8Array>): Thenable<number>;
 
 		// todo@joh - have an option to create iff not exist
 		// todo@remote
@@ -209,7 +211,6 @@ declare module 'vscode' {
 		write(resource: Uri, content: Uint8Array): Thenable<void>;
 
 		// todo@remote
-		// Thenable<FileStat>
 		move(resource: Uri, target: Uri): Thenable<FileStat>;
 
 		// todo@remote
@@ -217,20 +218,36 @@ declare module 'vscode' {
 		// copy?(from: Uri, to: Uri): Thenable<void>;
 
 		// todo@remote
-		// Thenable<FileStat>
+		// * add create-function
+		// * merge with mkdir
+		// -> create(resource: Uri, options: { type: FileType }): Thenable<FileStat>
 		mkdir(resource: Uri): Thenable<FileStat>;
-
-		readdir(resource: Uri): Thenable<[Uri, FileStat][]>;
+		// create(resource: Uri, options: { type: FileType }): Thenable<FileStat>;
 
 		// todo@remote
-		// ? merge both
-		// ? recursive del
+		// * merge both
+		// * recursive del
 		rmdir(resource: Uri): Thenable<void>;
 		unlink(resource: Uri): Thenable<void>;
-
-		// todo@remote
-		// create(resource: Uri): Thenable<FileStat>;
+		// delete(resource: Uri, options: { recursive?: boolean }): Thenable<void>;
 	}
+
+	export interface FileSystemSimpleReadWrite {
+		readFile(resource: Uri): Thenable<Uint8Array>;
+		writeFile(resource: Uri, data: Uint8Array): Thenable<void>;
+	}
+
+	export interface FileSystemChunkedReadWrite {
+		open(resource: Uri): Thenable<number>;
+		close(resource: Uri): Thenable<number>;
+		read(resource: number, position: number, length: number, progress: Progress<Uint8Array>): Thenable<number>;
+		write(resource: number, position: number, content: Uint8Array): Thenable<number>;
+	}
+
+	// todo@remote
+	// A marker type that is either simple or chunked read/write plus the extra bits...
+	export type FileSystemProvider2 = FileSystemProvider & FileSystemSimpleReadWrite | FileSystemProvider & FileSystemChunkedReadWrite;
+
 
 	export namespace workspace {
 		export function registerFileSystemProvider(scheme: string, provider: FileSystemProvider): Disposable;
