@@ -32,6 +32,7 @@ export class TerminalCommandTracker implements ITerminalCommandTracker {
 	}
 
 	private _onKey(key: string): void {
+		console.log('!!!!!!!!!!! onKey' + key);
 		if (key === '\x0d') {
 			this._onEnter();
 		}
